@@ -1,15 +1,16 @@
 # TSP-PRL
 Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video
 
+## Features
+
+## Pre-trained models
 
 
-
-
-### Train ###
+## Train ###
 - python train.py
 
-### Validate ###
+## Validate ###
 - python val.py
 
-### Test ###
+## Test ###
 - python test.py
