@@ -19,7 +19,7 @@ class Charades_Train_dataset(torch.utils.data.Dataset):
         self.visual_feature_dim = 4096
         self.sent_vec_dim = 4800
         self.sliding_clip_path = "./Dataset/Charades/Charades_localfeature_npy/"#"./Dataset/Charades/all_fc6_unit16_overlap0.5/"
-        self.clip_sentence_pairs_iou_all = pickle.load(open("./Dataset/Charades/ref_info/charades_rl_train_feature.pkl"))
+        self.clip_sentence_pairs_iou_all = pickle.load(open("./Dataset/Charades/ref_info/charades_rl_train_feature_glove_12408.pkl"))
 
         self.num_samples_iou = len(self.clip_sentence_pairs_iou_all)
         print(self.num_samples_iou, "iou clip-sentence pairs are readed")  # 49442
@@ -58,12 +58,16 @@ class Charades_Train_dataset(torch.utils.data.Dataset):
                 self.num_units_all.append(num_units)
                 movie_name_list.append(movie_name)
             self.movie_name_id.append(len(movie_name_list)-1)
-            # print(self.movie_name_id)
+
+        self.movie_length_dict = {}
+        with open("./Dataset/Charades/ref_info/charades_movie_length_info.txt")  as f:
+            for l in f:
+                self.movie_length_dict[l.rstrip().split(" ")[0]] = float(l.rstrip().split(" ")[1])
 
     def read_video_level_feats(self, movie_name, end):
         # read unit level feats by just passing the start and end number
         unit_size = 16
-        feats_dimen = 4096 *3
+        feats_dimen = 4096
         start = 1
         num_units = (end - start) / unit_size
         # print(start, end, num_units)
@@ -79,25 +83,46 @@ class Charades_Train_dataset(torch.utils.data.Dataset):
             start_end_list.append((curr_start, curr_start + unit_size))
             curr_start += unit_size
 
-        original_feats = np.zeros([300, feats_dimen], dtype=np.float32)
-        original_feats_1 = np.zeros([num_units, feats_dimen], dtype=np.float32)
+        original_feats = np.zeros([300, feats_dimen*2], dtype=np.float32)
+        original_feats_1 = np.zeros([num_units, feats_dimen*2], dtype=np.float32)
         for k, (curr_s, curr_e) in enumerate(start_end_list):
             one_feat = np.load(self.sliding_clip_path + movie_name + "_" + str(curr_s) + ".0_" + str(curr_e) + ".0.npy")
-            original_feats[k] = one_feat
-            original_feats_1[k] = one_feat
+            original_feats[k] = one_feat[feats_dimen:]
+            original_feats_1[k] = one_feat[feats_dimen:]
         # print(np.shape(original_feats))
-        global_feature = np.mean(original_feats_1, axis=0)
+        feature_length = len(original_feats_1)
+        idx = choose_ten_frame(feature_length)
+        global_feature_1 = original_feats_1[idx[0]]
+        global_feature_2 = original_feats_1[idx[1]]
+        global_feature_3 = original_feats_1[idx[2]]
+        global_feature_4 = original_feats_1[idx[3]]
+        global_feature_5 = original_feats_1[idx[4]]
+        global_feature_6 = original_feats_1[idx[5]]
+        global_feature_7 = original_feats_1[idx[6]]
+        global_feature_8 = original_feats_1[idx[7]]
+        global_feature_9 = original_feats_1[idx[8]]
+        global_feature_10 = original_feats_1[idx[9]]
+        global_feature_concate = np.concatenate([global_feature_1, global_feature_2, global_feature_3, global_feature_4, global_feature_5, \
+                                                  global_feature_6, global_feature_7, global_feature_8, global_feature_9, global_feature_10], axis=0)
+
+        global_feature = global_feature_concate
 
         initial_feature = original_feats[(oneinfour_unit-1):(threeinfour_unit)]
 
         feature_length = len(initial_feature)
-        idx = choose_four_frame(feature_length)
+        idx = choose_ten_frame(feature_length)
         initial_feature_1 = initial_feature[idx[0]]
         initial_feature_2 = initial_feature[idx[1]]
         initial_feature_3 = initial_feature[idx[2]]
         initial_feature_4 = initial_feature[idx[3]]
-        initial_feature_concate = np.concatenate(
-            [initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4], axis=0)
+        initial_feature_5 = initial_feature[idx[4]]
+        initial_feature_6 = initial_feature[idx[5]]
+        initial_feature_7 = initial_feature[idx[6]]
+        initial_feature_8 = initial_feature[idx[7]]
+        initial_feature_9 = initial_feature[idx[8]]
+        initial_feature_10 = initial_feature[idx[9]]
+        initial_feature_concate = np.concatenate([initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4, initial_feature_5, \
+                                                  initial_feature_6, initial_feature_7, initial_feature_8, initial_feature_9, initial_feature_10], axis=0)
 
         initial_feature = initial_feature_concate
 
@@ -171,6 +196,7 @@ class Charades_Test_dataset(torch.utils.data.Dataset):
         self.spacy_vec_dim = 300
         self.sent_vec_dim = 4800
         self.epochs_completed = 0
+        self.test_swin_txt_path = "./Dataset/Charades/ref_info/charades_sta_test_swin_props_num_36364.txt"
 
         self.clip_sentence_pairs = pickle.load(open("./Dataset/Charades/ref_info/charades_sta_test_semantic_sentence_VP_sub_obj.pkl"))
         self.num_samples_iou = len(self.clip_sentence_pairs)
@@ -185,10 +211,21 @@ class Charades_Test_dataset(torch.utils.data.Dataset):
                     movie_names_set.add(movie_name)
         self.movie_names = list(movie_names_set)
 
+        self.sliding_clip_names = []
+        with open(self.test_swin_txt_path) as f:
+            for l in f:
+                self.sliding_clip_names.append(l.rstrip().replace(" ", "_"))
+        print "sliding clips number for test: " + str(len(self.sliding_clip_names))  # 36364
+
+        self.movie_length_dict = {}
+        with open("./Dataset/Charades/ref_info/charades_movie_length_info.txt")  as f:
+            for l in f:
+                self.movie_length_dict[l.rstrip().split(" ")[0]] = float(l.rstrip().split(" ")[1])
+
     def read_video_level_feats(self, movie_name, end):
         # read unit level feats by just passing the start and end number
         unit_size = 16
-        feats_dimen = 4096 *3
+        feats_dimen = 4096
         start = 1
         num_units = (end - start) / unit_size
         # print(start, end, num_units)
@@ -205,25 +242,46 @@ class Charades_Test_dataset(torch.utils.data.Dataset):
             curr_start += unit_size
 
         # original_feats = np.zeros([num_units, feats_dimen], dtype=np.float32)
-        original_feats = np.zeros([num_units, feats_dimen], dtype=np.float32)
+        original_feats = np.zeros([num_units, feats_dimen*2], dtype=np.float32)
         for k, (curr_s, curr_e) in enumerate(start_end_list):
             one_feat = np.load(self.sliding_clip_path + movie_name + "_" + str(curr_s) + ".0_" + str(curr_e) + ".0.npy")
-            original_feats[k] = one_feat
+            original_feats[k] = one_feat[feats_dimen:]
         # print(np.shape(original_feats))
-        global_feature = np.mean(original_feats, axis=0)
+        feature_length = len(original_feats)
+        idx = choose_ten_frame(feature_length)
+        global_feature_1 = original_feats[idx[0]]
+        global_feature_2 = original_feats[idx[1]]
+        global_feature_3 = original_feats[idx[2]]
+        global_feature_4 = original_feats[idx[3]]
+        global_feature_5 = original_feats[idx[4]]
+        global_feature_6 = original_feats[idx[5]]
+        global_feature_7 = original_feats[idx[6]]
+        global_feature_8 = original_feats[idx[7]]
+        global_feature_9 = original_feats[idx[8]]
+        global_feature_10 = original_feats[idx[9]]
+        global_feature_concate = np.concatenate([global_feature_1, global_feature_2, global_feature_3, global_feature_4, global_feature_5, \
+                                                  global_feature_6, global_feature_7, global_feature_8, global_feature_9, global_feature_10], axis=0)
+
+        global_feature = global_feature_concate
 
         initial_feature = original_feats[(oneinfour_unit-1):(threeinfour_unit)]
 
         feature_length = len(initial_feature)
 
-        idx = choose_four_frame(feature_length)
+        idx = choose_ten_frame(feature_length)
         initial_feature_1 = initial_feature[idx[0]]
         initial_feature_2 = initial_feature[idx[1]]
         initial_feature_3 = initial_feature[idx[2]]
         initial_feature_4 = initial_feature[idx[3]]
-        initial_feature_concate = np.concatenate([initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4], axis=0)
+        initial_feature_5 = initial_feature[idx[4]]
+        initial_feature_6 = initial_feature[idx[5]]
+        initial_feature_7 = initial_feature[idx[6]]
+        initial_feature_8 = initial_feature[idx[7]]
+        initial_feature_9 = initial_feature[idx[0]]
+        initial_feature_10 = initial_feature[idx[9]]
+        initial_feature_concate = np.concatenate([initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4, initial_feature_5, \
+                                                  initial_feature_6, initial_feature_7, initial_feature_8, initial_feature_9, initial_feature_10], axis=0)
         initial_feature = initial_feature_concate
-
 
         initial_offset_start = oneinfour_unit-1
         initial_offset_end = threeinfour_unit - 1

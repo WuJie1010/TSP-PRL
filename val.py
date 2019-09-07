@@ -1,4 +1,4 @@
-" Val file "
+" Val file for Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video  "
 
 from __future__ import print_function
 
@@ -42,9 +42,8 @@ num_test_batches = int(len(test_dataset))
 print ("num_test_batches:", num_test_batches)
 
 # Model
-if opt.model == 'TSP_PRL': #  JJ_batch_stop_SmoothL1Loss_Previou_IoU
+if opt.model == 'TSP_PRL':
     net = HRL().cuda()
-
 
 def determine_scale_range(action_index, current_offset, num_units):
 
@@ -338,11 +337,10 @@ def determine_right_offset_range(action_index, current_offset, num_units):
     return current_offset_start, current_offset_end, update_offset, update_offset_norm, abnormal_done
 
 
-def val(max_iter, val_iter):
+def test(max_iter, val_iter):
 
     for i in range(max_iter-val_iter):
         epoch = i + val_iter
-
         checkpoint = torch.load(os.path.join(savepath, 'epoch_'+ str(epoch) +'_model.t7'))
         print("load ckpt from", 'epoch_'+ str(epoch) +'_model.t7')
         net.load_state_dict(checkpoint['net'])
@@ -352,6 +350,7 @@ def val(max_iter, val_iter):
         all_correct_num_1 = [0.0] * 5
         all_correct_num_20 = [0.0] * 5
         all_correct_num_30 = [0.0] * 5
+
         all_retrievd = 0.0
         all_number = len(test_dataset.movie_names)
         idx = 0
@@ -373,10 +372,8 @@ def val(max_iter, val_iter):
 
                 sent_vec = movie_clip_sentences[k][1][0]
                 sent_vec = np.reshape(sent_vec, [1, sent_vec.shape[0]]).cuda()  # 1,4800
-                # sent_vec = torch.from_numpy(sent_vec).cuda()
 
                 # network forward
-
                 best_iou_out = -1e8
                 best_iou_out_20 = -1e8
                 best_iou_out_30 = -1e8
@@ -387,7 +384,6 @@ def val(max_iter, val_iter):
                         current_feature = initial_feature
                         current_offset = initial_offset
                         current_offset_norm = initial_offset_norm
-                        # print(initial_offset[0][0], initial_offset[0][1])
                         current_offset_start = initial_offset[0][0]
                         current_offset_end = initial_offset[0][1]
 
@@ -405,16 +401,15 @@ def val(max_iter, val_iter):
                     if step < 20:
                         if iou_out > best_iou_out_20:
                             best_iou_out_20 = iou_out
-                            best_step = step+1
                             best_current_offset_start_20 = current_offset_start
                             best_current_offset_end_20 = current_offset_end
 
                     if step < 30:
                         if iou_out > best_iou_out_30:
                             best_iou_out_30 = iou_out
-                            best_step = step+1
                             best_current_offset_start_30 = current_offset_start
                             best_current_offset_end_30 = current_offset_end
+
 
                     global_policy_prob = F.softmax(global_policy, dim=1)
                     global_action = global_policy_prob.max(1, keepdim=True)[1].data.cpu().numpy()[0, 0]
@@ -461,12 +456,19 @@ def val(max_iter, val_iter):
                         current_feature = original_feats[0][(current_offset_start):(current_offset_end + 1)]
 
                         feature_length = len(current_feature)
-                        index = choose_four_frame(feature_length)
+                        index = choose_ten_frame(feature_length)
                         initial_feature_1 = current_feature[index[0]]
                         initial_feature_2 = current_feature[index[1]]
                         initial_feature_3 = current_feature[index[2]]
                         initial_feature_4 = current_feature[index[3]]
-                        initial_feature_concate = torch.cat((initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4), 0)
+                        initial_feature_5 = current_feature[index[4]]
+                        initial_feature_6 = current_feature[index[5]]
+                        initial_feature_7 = current_feature[index[6]]
+                        initial_feature_8 = current_feature[index[7]]
+                        initial_feature_9 = current_feature[index[8]]
+                        initial_feature_10 = current_feature[index[9]]
+                        initial_feature_concate = torch.cat((initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4, initial_feature_5, \
+                                                             initial_feature_6, initial_feature_7, initial_feature_8, initial_feature_9, initial_feature_10), 0)
                         current_feature = initial_feature_concate
                         current_feature = current_feature.unsqueeze(0).cuda()
 
@@ -481,6 +483,15 @@ def val(max_iter, val_iter):
 
                 sentence_image_reg_mat_30[k, 0] = best_current_offset_start_30 * 16 +1
                 sentence_image_reg_mat_30[k, 1] = best_current_offset_end_30 * 16 + 1
+
+                sentence_image_reg_mat_10_modify_exp[k, 0] = best_current_offset_start_modify_exp * 16 +1
+                sentence_image_reg_mat_10_modify_exp[k, 1] = best_current_offset_end_modify_exp * 16 +1
+
+                sentence_image_reg_mat_20_modify_exp[k, 0] = best_current_offset_start_20_modify_exp * 16 +1
+                sentence_image_reg_mat_20_modify_exp[k, 1] = best_current_offset_end_20_modify_exp * 16 + 1
+
+                sentence_image_reg_mat_30_modify_exp[k, 0] = best_current_offset_start_30_modify_exp * 16 +1
+                sentence_image_reg_mat_30_modify_exp[k, 1] = best_current_offset_end_30_modify_exp * 16 + 1
 
 
             sclips = [b[0][0] for b in movie_clip_sentences]
@@ -513,7 +524,6 @@ def val(max_iter, val_iter):
             print(" 20: IoU=" + str(IoU_thresh[k]) + ", R@1: " + str(all_correct_num_20[k] / all_retrievd))
             print(" 30: IoU=" + str(IoU_thresh[k]) + ", R@1: " + str(all_correct_num_30[k] / all_retrievd))
 
-
         R1_IOU7 = all_correct_num_1[3] / all_retrievd
         R1_IOU5 = all_correct_num_1[2] / all_retrievd
 
@@ -522,8 +532,6 @@ def val(max_iter, val_iter):
 
         R1_IOU7_30 = all_correct_num_30[3] / all_retrievd
         R1_IOU5_30 = all_correct_num_30[2] / all_retrievd
-
-
 
         R1_IOU7_all.append(R1_IOU7)
         print("R1_IOU7 for Train Epoch %d : %f" % (epoch, R1_IOU7))
@@ -665,7 +673,7 @@ def val(max_iter, val_iter):
 
 if __name__ == '__main__':
     start_epoch = 0
-    total_epoch = 200
+    total_epoch = 500
 
     savepath = os.path.join(path, "ckpt")
     #
@@ -705,7 +713,7 @@ if __name__ == '__main__':
         R1_IOU5_all_30 = []
         R1_IOU7_all_20 =[]
         R1_IOU5_all_20 = []
-    #
+
         best_results = {}
         best_results['R1_IOU7'] = 0
         best_results['R1_IOU5'] = 0
@@ -721,8 +729,6 @@ if __name__ == '__main__':
         best_results['R1_IOU5_30'] = 0
         best_results['R1_IOU7_30_iteration'] = 0
         best_results['R1_IOU5_30_iteration'] = 0
-    # print("max_iter", max_iter)
-    # print('val_iter:', val_iter)
 
-    val(total_epoch, val_iter)
+    test(total_epoch, val_iter)
 

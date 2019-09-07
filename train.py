@@ -1,4 +1,4 @@
-" Train file for TSP-PRL "
+" Training file for Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video  "
 
 from __future__ import print_function
 
@@ -19,7 +19,7 @@ plt.rcParams['figure.figsize'] = (8.0, 4.0)
 parser = argparse.ArgumentParser(description='Video Grounding of PyTorch')
 parser.add_argument('--model', type=str, default='TSP_PRL', help='model type')
 parser.add_argument('--dataset', type=str, default='Charades', help='dataset type')
-parser.add_argument('--batch_size', default=64, type=int, help='batch size')
+parser.add_argument('--batch_size', default=16, type=int, help='batch size')
 parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--num_steps', type=int, default=20, help='number of forward steps in A2C (default: 10)')
@@ -31,7 +31,6 @@ parser.add_argument('--switch_iteration', type=int, default=200,
                     help='switch training')
 
 opt = parser.parse_args()
-
 regression_loss_func = nn.BCEWithLogitsLoss()# nn.BCEWithLogitsLoss()
 
 def setup_seed(seed):
@@ -66,18 +65,13 @@ optimizer = torch.optim.Adam(net.parameters(), lr=opt.lr)
 
 
 def determine_scale_range(action_index, current_offset, num_units):
-
     update_offset = torch.zeros(2)
     update_offset_norm = torch.zeros(2)
-
     abnormal_done = 1
     current_offset_start = int(current_offset[0])
     current_offset_end = int(current_offset[1])
-
     current_offset_center = (current_offset_start + current_offset_end) /2
     length = current_offset_end - current_offset_start
-
-
     num_units_index = int(num_units)
 
     if current_offset_end < 0 or current_offset_start > num_units_index or current_offset_end <= current_offset_start:
@@ -122,6 +116,7 @@ def determine_scale_range(action_index, current_offset, num_units):
     update_offset[1] = current_offset_end
 
     return current_offset_start, current_offset_end, update_offset, update_offset_norm, abnormal_done
+
 
 def determine_left_move_range(action_index, current_offset, ten_unit, num_units):
 
@@ -409,11 +404,10 @@ def train(start_epoch, total_epoch):
                 hidden_state, global_policy, global_value, scale_policy, scale_value, left_move_policy, left_move_value, right_move_policy, right_move_value, \
                 left_offset_policy, left_offset_value, right_offset_policy, right_offset_value, iou_out = net(global_feature, current_feature, sentence, current_offset_norm, hidden_state)
 
-
                 global_policy_prob = F.softmax(global_policy, dim=1)
-
-                if batch_idx %100 == 0:
-                    print(global_policy_prob)
+                #
+                # if batch_idx %100 == 0:
+                #     print(global_policy_prob)
 
                 if global_flag == True: # train the global_layer
                     global_policy_log_prob = F.log_softmax(global_policy, dim=1)
@@ -446,27 +440,22 @@ def train(start_epoch, total_epoch):
                     if global_flag == True:  # train the global_layer
                         scale_policy_prob = F.softmax(scale_policy[i], dim=0)
                         scale_policy_action = scale_policy_prob.max(0, keepdim=True)[1].data.cpu().numpy()
-                        _, _, _, golbal_all_norm[i][0], _ = determine_scale_range(scale_policy_action,
-                                                                                  current_offset[i], num_units[i])
+                        _, _, _, golbal_all_norm[i][0], _ = determine_scale_range(scale_policy_action, current_offset[i], num_units[i])
                         # also compute other policy results to get the reward
                         left_move_policy_prob = F.softmax(left_move_policy[i], dim=0)
                         left_move_policy_action = left_move_policy_prob.max(0, keepdim=True)[1].data.cpu().numpy()
-                        _, _, _, golbal_all_norm[i][1], _ = determine_left_move_range(left_move_policy_action, current_offset[i],
-                                                                                 ten_unit[i], num_units[i])
+                        _, _, _, golbal_all_norm[i][1], _ = determine_left_move_range(left_move_policy_action, current_offset[i], ten_unit[i], num_units[i])
                         # also compute other policy results to get the reward
                         right_move_policy_prob = F.softmax(right_move_policy[i], dim=0)
                         right_move_policy_action = right_move_policy_prob.max(0, keepdim=True)[1].data.cpu().numpy()
-                        _, _, _, golbal_all_norm[i][2], _ = determine_right_move_range(right_move_policy_action, current_offset[i],
-                                                                                 ten_unit[i], num_units[i])
+                        _, _, _, golbal_all_norm[i][2], _ = determine_right_move_range(right_move_policy_action, current_offset[i], ten_unit[i], num_units[i])
                         left_offset_policy_prob = F.softmax(left_offset_policy[i], dim=0)
                         left_offset_policy_action = left_offset_policy_prob.max(0, keepdim=True)[1].data.cpu().numpy()
-                        _, _, _, golbal_all_norm[i][3], _ = determine_left_offset_range(left_offset_policy_action,
-                                                                                   current_offset[i], num_units[i])
+                        _, _, _, golbal_all_norm[i][3], _ = determine_left_offset_range(left_offset_policy_action, current_offset[i], num_units[i])
 
                         right_offset_policy_prob = F.softmax(right_offset_policy[i], dim=0)
                         right_offset_policy_action = right_offset_policy_prob.max(0, keepdim=True)[1].data.cpu().numpy()
-                        _, _, _, golbal_all_norm[i][4], _ = determine_right_offset_range(right_offset_policy_action,
-                                                                                   current_offset[i], num_units[i])
+                        _, _, _, golbal_all_norm[i][4], _ = determine_right_offset_range(right_offset_policy_action, current_offset[i], num_units[i])
 
                     if global_policy_action[i] == 0:
 
@@ -579,18 +568,23 @@ def train(start_epoch, total_epoch):
                     if abnormal == 1:
                         current_feature_med = original_feats[i][(current_offset_start[i]):(current_offset_end[i]+1)]
                         feature_length = len(current_feature_med)
-                        idx = choose_four_frame(feature_length)
+                        idx = choose_ten_frame(feature_length)
                         initial_feature_1 = current_feature_med[idx[0]]
                         initial_feature_2 = current_feature_med[idx[1]]
                         initial_feature_3 = current_feature_med[idx[2]]
                         initial_feature_4 = current_feature_med[idx[3]]
-                        initial_feature_concate = torch.cat((initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4), 0)
+                        initial_feature_5 = current_feature_med[idx[4]]
+                        initial_feature_6 = current_feature_med[idx[5]]
+                        initial_feature_7 = current_feature_med[idx[6]]
+                        initial_feature_8 = current_feature_med[idx[7]]
+                        initial_feature_9 = current_feature_med[idx[8]]
+                        initial_feature_10 = current_feature_med[idx[9]]
+                        initial_feature_concate = torch.cat((initial_feature_1, initial_feature_2, initial_feature_3, initial_feature_4, initial_feature_5, \
+                                                             initial_feature_6, initial_feature_7, initial_feature_8, initial_feature_9, initial_feature_10), 0)
                         current_feature[i] = initial_feature_concate
 
                 if global_flag == True:
                     global_reward = calculate_root_reward_batch(Previou_IoU, current_IoU, global_all_IoU)
-                    # global_reward = calculate_global_reward_batch_3(Previou_IoU, current_IoU, global_all_IoU)
-                    # print(global_reward)
                 else:
                     reward = calculate_leaf_reward_batch(Previou_IoU, current_IoU, step+1)
 
@@ -604,12 +598,11 @@ def train(start_epoch, total_epoch):
                     local_policy_log_probs[step, :] = local_policy_log_prob
                     local_policy_rewards[step, :] = reward
 
+
             mask_iou_pos = Current_IoUs > 0
 
             label_iou_for_loss_positive = Current_IoUs[mask_iou_pos]
             output_iou_for_loss_positive = IoUs_outputs[mask_iou_pos]
-            # print(label_iou_for_loss_positive.size(), output_iou_for_loss_positive.size())
-
             iou_loss = regression_loss_func(output_iou_for_loss_positive, label_iou_for_loss_positive)
 
             if global_flag == True:
@@ -840,7 +833,7 @@ def train(start_epoch, total_epoch):
 
 if __name__ == '__main__':
     start_epoch = 0
-    total_epoch = 150
+    total_epoch = 500
     ave_global_policy_loss_all = []
     ave_global_value_loss_all = []
     ave_policy_loss_all = []
