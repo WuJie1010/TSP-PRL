@@ -2,8 +2,8 @@
 This repository contains the pytorch codes and trained models described in the paper "Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video" By Jie Wu, Guanbin Li, Si Liu, Liang Lin. 
 
 
-![Motivation](https://raw.githubusercontent.com/WuJie1010/TSP-PRL/master/images/introduction.png)
-![Framework](https://raw.githubusercontent.com/WuJie1010/TSP-PRL/master/images/model.png)
+![Motivation](https://github.com/WuJie1010/TSP-PRL/blob/master/images/introduction.png)
+![Framework](https://github.com/WuJie1010/TSP-PRL/blob/master/images/model.png)
 
 ## Requirements
 - Python 2.7
