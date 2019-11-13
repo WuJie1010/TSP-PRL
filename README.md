@@ -17,7 +17,7 @@ This repository contains the pytorch codes and trained models described in the p
 Please download the features in [Features](https://drive.google.com/drive/folders/1U1GEti3JjLfOAN0AhCb0VXqfGoKV9qMo?usp=sharing), and put it in the "Dataset/Charades" folder.
 
 ## Pre-trained models
-We provide the pre-trained model for Charades-STA dataset, which can get 24.73 on R@1, IoU0.7 and 45.30 on R@1, IoU0.5: [Models]()
+We provide the pre-trained model for Charades-STA dataset, which can get 24.73 on R@1, IoU0.7 and 45.30 on R@1, IoU0.5: [Models](https://drive.google.com/open?id=1lyOlcKR5PY7cN_yjZfGUypfNRTokw_He)
 
 ## Train ###
 ```
