@@ -1,5 +1,5 @@
 # Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video (AAAI2020)
-By Jie Wu, Guanbin Li, Si Liu, Liang Lin. This repository contains the pytorch codes and trained models described in the paper "Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video".
+This repository contains the pytorch codes and trained models described in the paper "Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video" By Jie Wu, Guanbin Li, Si Liu, Liang Lin. 
 
 ## Requirements
 - Python 2.7
