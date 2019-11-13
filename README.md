@@ -1,5 +1,8 @@
-# TSP-PRL
-Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video
+# Tree-Structured Policy based Progressive Reinforcement Learning for Temporally Language Grounding in Video (AAAI2020)
+By Jie Wu, Guanbin Li, Si Liu, Liang Lin.
+
+## Requirements
+Python2, pytorch 0.4.1
 
 ## Features
 Please download the features in [link](https://drive.google.com/drive/folders/1U1GEti3JjLfOAN0AhCb0VXqfGoKV9qMo?usp=sharing), and put it in the "Dataset/Charades" folder.
