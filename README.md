@@ -13,5 +13,5 @@ We provide the pre-trained model for Charades-STA dataset, which can get 24.73 o
 ## Validate ###
 - python val.py
 
-## Test ###
+## Test from Pre-trained Model ###
 - python test.py
