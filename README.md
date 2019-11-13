@@ -3,7 +3,7 @@ This repository contains the pytorch codes and trained models described in the p
 
 
 ![Motivation](https://raw.githubusercontent.com/WuJie1010/TSP-PRL/master/images/introduction.png)
-![Framework](https://raw.githubusercontent.com/WuJie1010/TSP-PRL/master/images/model.jpg)
+![Framework](https://raw.githubusercontent.com/WuJie1010/TSP-PRL/master/images/model.png)
 
 ## Requirements
 - Python 2.7
